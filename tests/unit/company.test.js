@@ -42,16 +42,16 @@ function peviitorResponse(companies) {
   };
 }
 
-function solrResponse(numFound, docs) {
+function solrResponse(total, data) {
   return {
     ok: true,
-    json: async () => ({ response: { numFound, docs } })
+    json: async () => ({ total, data })
   };
 }
 
 const ARTSOFT_ANAF_RECORD = {
   cui: 15997630,
-  name: 'ART SOFT CONSULT SRL',
+  name: 'ARTSOFT CONSULT SRL',
   address: 'Str. Eugen Ionesco, 1A, Cluj-Napoca, Cluj',
   caenCode: '6201',
   inactive: false,
@@ -64,15 +64,13 @@ describe('company.js', () => {
   let company;
 
   beforeAll(async () => {
-    process.env.SOLR_AUTH = 'test:test';
     fs.mkdirSync("tmp", { recursive: true });
     backupFile(COMPANY_JSON_PATH);
     backupFile(ROOT_COMPANY_JSON_PATH);
-    company = await import('../../company.js');
+    company = await import('../../scraper/company.js');
   });
 
   afterAll(() => {
-    delete process.env.SOLR_AUTH;
     restoreFile(COMPANY_JSON_PATH);
     restoreFile(ROOT_COMPANY_JSON_PATH);
   });
@@ -83,16 +81,16 @@ describe('company.js', () => {
   });
 
   describe('getCompanyData (no cache)', () => {
-    it('should fetch Artsoft via direct CIF lookup and return company data', async () => {
+    it('should fetch ArtSoft via direct CIF lookup and return company data', async () => {
       mockFetch.mockResolvedValueOnce(anafCompanyResponse(ARTSOFT_ANAF_RECORD));
 
       const result = await company.getCompanyData();
 
-      expect(result).toHaveProperty('company', 'ART SOFT CONSULT SRL');
+      expect(result).toHaveProperty('company', 'ARTSOFT CONSULT SRL');
       expect(result).toHaveProperty('cif', '15997630');
       expect(result).toHaveProperty('active', true);
       expect(result).toHaveProperty('anafData');
-      expect(result.anafData.name).toBe('ART SOFT CONSULT SRL');
+      expect(result.anafData.name).toBe('ARTSOFT CONSULT SRL');
     });
 
     it('should throw when ANAF returns no data', async () => {
@@ -113,7 +111,7 @@ describe('company.js', () => {
       validatedAt: new Date().toISOString(),
       anaf: ARTSOFT_ANAF_RECORD,
       summary: {
-        company: 'ART SOFT CONSULT SRL',
+        company: 'ARTSOFT CONSULT SRL',
         cif: '15997630',
         active: true
       }
@@ -126,7 +124,7 @@ describe('company.js', () => {
     it('should use cached company data when available', async () => {
       const result = await company.getCompanyData();
 
-      expect(result.company).toBe('ART SOFT CONSULT SRL');
+      expect(result.company).toBe('ARTSOFT CONSULT SRL');
       expect(result.cif).toBe('15997630');
       expect(result.active).toBe(true);
       expect(mockFetch).not.toHaveBeenCalled();
@@ -145,17 +143,18 @@ describe('company.js', () => {
           { url: 'https://test.com/1', title: 'Job 1' },
           { url: 'https://test.com/2', title: 'Job 2' }
         ]))
-        .mockResolvedValueOnce(peviitorResponse([{ company: 'ART SOFT CONSULT SRL' }]));
+        .mockResolvedValueOnce(peviitorResponse([{ company: 'ARTSOFT CONSULT SRL' }]));
 
       const result = await company.validateAndGetCompany();
 
       expect(result).toHaveProperty('status', 'active');
-      expect(result).toHaveProperty('company', 'ART SOFT CONSULT SRL');
+      expect(result).toHaveProperty('company', 'ARTSOFT CONSULT SRL');
       expect(result).toHaveProperty('cif', '15997630');
       expect(result).toHaveProperty('existingJobsCount');
       expect(typeof result.existingJobsCount).toBe('number');
     });
 
+    // ArtSoft e activă — testul inactive se rulează doar dacă firma e inactivă
     if (ARTSOFT_ANAF_RECORD.inactive) {
       it('should return inactive status when company is inactive', async () => {
         const inactiveRecord = { ...ARTSOFT_ANAF_RECORD, inactive: true };

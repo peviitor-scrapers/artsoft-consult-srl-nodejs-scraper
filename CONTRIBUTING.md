@@ -12,7 +12,8 @@ This repo is **derived from** the [reference template](https://github.com/sebibo
 
 | File | What to change |
 |------|---------------|
-| `config/company.json` | Edit all fields: `cif`, `legalName`, `brand`, `website`, `careerUrl`, `apiBase`, `apiCountryId`, `defaultLocation`, `scraperFile` |
+| `scraper/config/company.json` | Edit all fields: `id`, `company`, `brand`, `status`, `location[]`, `website[]`, `career[]`, `scraperFile` |
+| `scraper/config/scraper.json` | Edit all fields: `apiBase`, `careerUrl`, `internshipUrl`, `internshipApplyUrl`, `defaultLocation` |
 
 All scraper code, CI workflows, and the static HTML read from this file.
 
@@ -28,13 +29,13 @@ All scraper code, CI workflows, and the static HTML read from this file.
 
 ### 2. Adjust the scraper
 
-- Rewrite `fetchJobsHtml()` and `parseHtmlJobs()` in `index.js` to match the new source
+- Rewrite `fetchJobsHtml()` and `parseHtmlJobs()` in `scraper/index.js` to match the new source
 - Keep the **output shape identical** — `mapToJobModel()` and `transformJobsForSOLR()` should not change
 - Update tests accordingly
 
 ### 3. Wire up CI
 
-- Add `SOLR_AUTH` as a repo secret
+- No secrets needed — all operations go through the public Peviitor API
 - Enable GitHub Pages (root: `docs/`)
 
 ### 4. Validate

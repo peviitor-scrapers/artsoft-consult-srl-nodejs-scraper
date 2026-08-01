@@ -4,7 +4,7 @@ describe('index.js Component Tests', () => {
   let index;
 
   beforeAll(async () => {
-    index = await import('../../index.js');
+    index = await import('../../scraper/index.js');
   });
 
   describe('transformJobsForSOLR', () => {
@@ -31,16 +31,16 @@ describe('index.js Component Tests', () => {
     it('should keep company uppercase', () => {
       const payload = {
         source: 'artsoft-consult.ro',
-        company: 'art soft consult srl',
+        company: 'artsoft consult srl',
         cif: '15997630',
         jobs: [
-          { url: 'https://test.com/1', title: 'Job 1', company: 'art soft consult', cif: '15997630' }
+          { url: 'https://test.com/1', title: 'Job 1', company: 'artsoft consult', cif: '15997630' }
         ]
       };
 
       const result = index.transformJobsForSOLR(payload);
 
-      expect(result.company).toBe('ART SOFT CONSULT SRL');
+      expect(result.company).toBe('ARTSOFT CONSULT SRL');
     });
 
     it('should normalize workmode values', () => {
@@ -77,7 +77,7 @@ describe('index.js Component Tests', () => {
         workmode: 'hybrid'
       };
 
-      const COMPANY_NAME = 'ART SOFT CONSULT SRL';
+      const COMPANY_NAME = 'ARTSOFT CONSULT SRL';
       const COMPANY_CIF = '15997630';
 
       const result = index.mapToJobModel(rawJob, COMPANY_CIF, COMPANY_NAME);

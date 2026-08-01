@@ -3,7 +3,7 @@
   "brand": "ArtSoft Consult",
   "anaf": {
     "cui": 15997630,
-    "name": "ART SOFT CONSULT SRL",
+    "name": "ARTSOFT CONSULT SRL",
     "address": "Str. Eugen Ionesco, 1A, Cluj-Napoca, Cluj",
     "caenCode": "6201",
     "inactive": false,
@@ -20,7 +20,7 @@
   },
   "summary": {
     "validatedAt": "2026-06-17T00:00:00.000Z",
-    "company": "ART SOFT CONSULT SRL",
+    "company": "ARTSOFT CONSULT SRL",
     "cif": "15997630",
     "active": true,
     "brand": "ArtSoft Consult",
@@ -32,7 +32,7 @@
     "scraperFile": "https://raw.githubusercontent.com/sebiboga/artsoft-consult-srl-nodejs-scraper/main/.github/workflows/job-seeker-ro-spider.yml"
   },
   "peviitor": {
-    "company": "ART SOFT CONSULT SRL",
+    "company": "ARTSOFT CONSULT SRL",
     "brand": "ArtSoft Consult",
     "website": "https://www.artsoft-consult.ro"
   }

@@ -28,7 +28,14 @@ function errorResponse(status) {
   };
 }
 
-const ANRAF_RECORD = {
+function cuiscanCompanyResponse(data) {
+  return {
+    ok: true,
+    json: async () => data
+  };
+}
+
+const ARTSOFT_ANAF_RECORD = {
   cui: 15997630,
   name: 'ARTSOFT CONSULT SRL',
   address: 'JUD. CLUJ, MUN. CLUJ-NAPOCA, STR. EUGEN IONESCO, NR.1A',
@@ -38,6 +45,18 @@ const ANRAF_RECORD = {
   vatRegistered: true,
   onrcStatusLabel: 'Funcțiune',
   legalForm: 'SRL'
+};
+
+const CUISCAN_RECORD = {
+  cui: 15997630,
+  denumire: 'ARTSOFT CONSULT SRL',
+  adresa: 'JUD. CLUJ, MUN. CLUJ-NAPOCA, STR. EUGEN IONESCO, NR.1A',
+  codCaen: '6201',
+  activ: true,
+  nrRegCom: 'J12/3558/2003',
+  platitorTVA: true,
+  stareInregistrare: 'INREGISTRAT din data 13.12.2003',
+  adresaSediu: { strada: 'Str. Eugen Ionesco', numar: '1A', localitate: 'Mun. Cluj-Napoca', judet: 'CLUJ', codPostal: '400357' }
 };
 
 const CACHED_DATA = {
@@ -50,11 +69,11 @@ const CACHED_DATA = {
   onrcStatusLabel: 'Funcțiune'
 };
 
-describe('src/anaf.js', () => {
+describe('scraper/anaf.js', () => {
   let anaf;
 
   beforeAll(async () => {
-    anaf = await import('../../src/anaf.js');
+    anaf = await import('../../scraper/anaf.js');
   });
 
   beforeEach(() => {
@@ -67,7 +86,7 @@ describe('src/anaf.js', () => {
         { cui: 15997630, name: 'ARTSOFT CONSULT SRL', statusLabel: 'Funcțiune' }
       ]));
 
-      const results = await anaf.searchCompany('ArtSoft');
+      const results = await anaf.searchCompany('ARTSOFT');
 
       expect(Array.isArray(results)).toBe(true);
       expect(results.length).toBeGreaterThan(0);
@@ -89,15 +108,21 @@ describe('src/anaf.js', () => {
         { cui: 15997630, name: 'ARTSOFT CONSULT SRL', statusLabel: 'Funcțiune' }
       ]));
 
-      const results = await anaf.searchCompany('ArtSoft');
+      const results = await anaf.searchCompany('ARTSOFT');
 
       expect(results[0]).toHaveProperty('statusLabel', 'Funcțiune');
     });
 
-    it('should throw on HTTP error', async () => {
-      mockFetch.mockResolvedValue(errorResponse(500));
+    it('should fallback to CUIFirma when ANAF search fails', async () => {
+      mockFetch
+        .mockResolvedValueOnce(errorResponse(500))
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ results: [{ cui: 15997630, name: 'ARTSOFT CONSULT SRL', is_active: true }] }) });
 
-      await expect(anaf.searchCompany('ArtSoft')).rejects.toThrow('ANAF search error: 500');
+      const results = await anaf.searchCompany('ARTSOFT');
+
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBeGreaterThan(0);
+      expect(results[0].cui).toBe('15997630');
     });
 
     it('should encode brand name in URL', async () => {
@@ -107,14 +132,14 @@ describe('src/anaf.js', () => {
         return Promise.resolve(anafSearchResponse([]));
       });
 
-      await anaf.searchCompany('ArtSoft SRL');
-      expect(capturedUrl).toContain(encodeURIComponent('ArtSoft SRL'));
+      await anaf.searchCompany('ARTSOFT SRL');
+      expect(capturedUrl).toContain(encodeURIComponent('ARTSOFT SRL'));
     });
   });
 
   describe('getCompanyFromANAF', () => {
     it('should return company data for valid CIF', async () => {
-      mockFetch.mockResolvedValue(anafCompanyResponse(ANRAF_RECORD));
+      mockFetch.mockResolvedValue(anafCompanyResponse(ARTSOFT_ANAF_RECORD));
 
       const data = await anaf.getCompanyFromANAF('15997630');
 
@@ -125,30 +150,33 @@ describe('src/anaf.js', () => {
       expect(data).toHaveProperty('registrationNumber');
     });
 
-    it('should retry on HTTP error then succeed', async () => {
+    it('should fallback to CUIScan when ANAF fails', async () => {
       mockFetch
         .mockResolvedValueOnce(errorResponse(500))
-        .mockResolvedValueOnce(anafCompanyResponse(ANRAF_RECORD));
+        .mockResolvedValueOnce(cuiscanCompanyResponse(CUISCAN_RECORD));
 
       const data = await anaf.getCompanyFromANAF('15997630');
 
       expect(data).toBeDefined();
       expect(data.cui).toBe(15997630);
+      expect(data.name).toBe('ARTSOFT CONSULT SRL');
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
-    it('should throw after exhausting retries', async () => {
+    it('should throw when both ANAF and CUIScan fail', async () => {
       mockFetch.mockResolvedValue(errorResponse(500));
 
       await expect(anaf.getCompanyFromANAF('15997630')).rejects.toThrow();
-      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
     it('should handle API-level error response', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: async () => ({ success: false, error: { message: 'Company not found' } })
-      });
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ success: false, error: { message: 'Company not found' } })
+        })
+        .mockResolvedValueOnce(errorResponse(500));
 
       await expect(anaf.getCompanyFromANAF('00000000')).rejects.toThrow();
     });
@@ -163,7 +191,7 @@ describe('src/anaf.js', () => {
 
   describe('getCompanyFromANAFWithFallback', () => {
     it('should return fresh data when API works', async () => {
-      mockFetch.mockResolvedValue(anafCompanyResponse(ANRAF_RECORD));
+      mockFetch.mockResolvedValue(anafCompanyResponse(ARTSOFT_ANAF_RECORD));
 
       const data = await anaf.getCompanyFromANAFWithFallback('15997630');
 

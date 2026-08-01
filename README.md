@@ -13,7 +13,7 @@
 [![SOLR](https://img.shields.io/website?url=https%3A%2F%2Fsolr.peviitor.ro%2Fsolr%2F&label=solr.peviitor.ro)](https://solr.peviitor.ro/solr/)
 [![GitHub Pages](https://img.shields.io/github/deployments/sebiboga/artsoft-consult-srl-nodejs-scraper/github-pages?label=GitHub%20Pages)](https://sebiboga.github.io/artsoft-consult-srl-nodejs-scraper/)
 
-**job_seeker_ro_spider** — un scraper pentru job-urile ArtSoft Consult din România. Extrage anunțurile de pe [ArtSoft Consult careers](https://www.artsoft-consult.ro/careers/job-openings) și le publică în [peviitor.ro](https://peviitor.ro) prin API-ul SOLR.
+**job_seeker_ro_spider** — un scraper pentru job-urile ArtSoft Consult din România. Extrage anunțurile de pe [ArtSoft Consult careers](https://www.artsoft-consult.ro/careers/job-openings) și le publică în [peviitor.ro](https://peviitor.ro) prin [API-ul peviitor.ro](https://api.peviitor.ro/).
 
 > **🌱 Derived scraper.** Acest repo este **derivat** din [template-ul de referință](https://github.com/sebiboga/epam-systems-international-srl-nodejs-scraper) — template-ul de referință pentru ecosistemul peviitor.ro. Consultă [CONTRIBUTING.md](CONTRIBUTING.md) pentru detalii despre derivare.
 
@@ -24,60 +24,69 @@ Proiectul automatizează colectarea zilnică a job-urilor ArtSoft Consult din Ro
 ## Features
 
 - Extrage job-uri din pagina de cariere ArtSoft Consult (HTML scraping cu cheerio)
-- Validează compania via ANAF (CUI, status activ/inactiv, adresă completă)
-- **Cache ANAF la 7 zile** — committed în repo, nu lovește demoANAF la fiecare scrape
+- Validează compania via ANAF (CUI, status activ/inactiv, adresă completă) + fallback CUIScan/CUIFirma
+- **Cache ANAF la 7 zile** — ținut local, nu lovește demoANAF la fiecare scrape
 - **Fallback la cache stale** dacă ANAF e indisponibil
 - Cross-validează cu Peviitor API
-- Stochează în SOLR (job core + company core)
+- Upsert job-uri + company core prin API-ul peviitor.ro (fără acces direct SOLR, fără `SOLR_AUTH`)
 - Generează `docs/jobs.md` automat — accesibil pe GitHub Pages
-- **Identitate companie într-un singur fișier** (`config/company.json`) — derivare ușoară
+- **Identitate companie într-un singur fișier** (`scraper/config/company.json`) — derivare ușoară
 - GitHub Actions: scrape zilnic + testare automată (unit, integration, e2e, consistency)
-- Teste SOLR condiționale — auto-skip când `SOLR_AUTH` nu e setat
+- E2E cu site-ul real, deep validation cu Playwright (browser mode)
 
 ## Project Structure
 
 ```
-├── index.js                    # Main scraper entry point
-├── company.js                  # Company validation via ANAF + Peviitor + SOLR
-├── demoanaf.js                 # CLI wrapper for src/anaf.js
-├── solr.js                     # SOLR operations (query, upsert, delete, company)
-├── validate-jobs.js            # Job URL validator — checks active/expired, deletes stale jobs
-├── config/
-│   ├── company.json            # Single source of truth: CIF, brand, URLs
-│   └── company.js              # ESM loader for company.json
-├── src/
-│   ├── anaf.js                 # ANAF API core module (search + company details)
-│   ├── markdown-generator.js   # Generates docs/jobs.md from scraped data
-│   └── job-validator.js        # Shared validateByHead + validateByContent
-├── company.json                # ANAF data cache (committed, 7-day TTL)
+├── scraper/
+│   ├── index.js                    # Main scraper entry point (HTML scraping cu cheerio)
+│   ├── company.js                  # Company validation via ANAF + CUIScan + Peviitor
+│   ├── demoanaf.js                 # CLI wrapper for scraper/anaf.js
+│   ├── api.js                      # Peviitor API operations (query, upsert, delete, company)
+│   ├── validate-jobs.js            # Job URL validator — checks active/expired, deletes stale jobs
+│   ├── anaf.js                     # ANAF API core module (search + company details + fallback)
+│   ├── markdown-generator.js       # Generates docs/jobs.md from scraped data
+│   ├── job-validator.js            # Shared validateByHead + validateByContent + validateByBrowser
+│   └── config/
+│       ├── company.json            # Single source of truth: id, brand, URLs
+│       ├── company.js              # ESM loader for company.json
+│       ├── scraper.json            # API base, career/internship URLs, defaultLocation
+│       └── scraper.js              # ESM loader for scraper.json
+├── ai/                             # Documentation pentru AI agents
+│   ├── AGENTS.md, INSTRUCTIONS.md, files.md, job-model.md, company-model.md
+│   ├── AI-DERIVATION-GUIDE.md, MAINTENANCE.md, VERIFY.md, BRANCH.md, ISSUES.md
+│   └── PUBLIC.md, ROBOTS.md, TOPICS.md, UPDATE-REPO-ABOUT.md
 ├── tests/
-│   ├── package.json            # Jest config for test suite
-│   ├── company.json            # Mock ANAF data used in unit tests
-│   ├── validate-artsoft-consult-jobs.js # SOLR job URL validation script
+│   ├── package.json                # Jest config for test suite
+│   ├── company.json                # Mock ANAF data used in unit tests
+│   ├── validate-artsoft-consult-jobs.js  # CI job URL validation script (--head/--content/--browser)
 │   ├── unit/
-│   │   ├── index.test.js       # Tests for parseHtmlJobs, mapToJobModel, transformJobsForSOLR
-│   │   ├── company.test.js     # Tests for validateAndGetCompany, fallback caching
-│   │   ├── solr.test.js        # Tests for query, upsert, delete operations
-│   │   └── demoanaf.test.js    # Tests for ANAF search and company retrieval
+│   │   ├── index.test.js           # Tests for parseHtmlJobs, mapToJobModel, transformJobsForSOLR
+│   │   ├── company.test.js         # Tests for validateAndGetCompany, fallback caching
+│   │   ├── api.test.js             # Tests for api.js query/upsert/delete operations
+│   │   ├── demoanaf.test.js        # Tests for ANAF search, retrieval, CUIScan/CUIFirma fallback
+│   │   ├── job-validator.test.js   # Tests for validateByHead/Content/Browser
+│   │   └── markdown-generator.test.js
 │   ├── integration/
-│   │   └── workflow.test.js    # Live ANAF + SOLR integration tests
+│   │   └── workflow.test.js        # Live ANAF + Peviitor API integration tests
 │   ├── e2e/
-│   │   └── scraper.test.js     # Full pipeline tests with real ArtSoft website
+│   │   └── scraper.test.js         # Full pipeline tests with real ArtSoft website
 │   └── consistency/
-│       ├── public.test.js      # Verifies repo is public
-│       ├── repo.test.js        # Verifies branch, Pages, secrets, workflows
-│       ├── topics.test.js      # Verifies required repo topics
-│       └── workflow-naming.test.js  # Validates workflow naming conventions
+│       ├── root-files.test.js      # Verifies required root files
+│       ├── repo.test.js            # Verifies branch, Pages, secrets, workflows
+│       ├── version.test.js         # Verifies version consistency
+│       ├── topics.test.js          # Verifies required repo topics
+│       └── workflow-naming.test.js # Validates workflow naming conventions
 ├── docs/
-│   ├── index.html              # Live job board (GitHub Pages)
-│   ├── jobs.md                 # Scraped jobs in markdown (generated by CI)
-│   ├── README.md
-│   └── test-results/           # Test reports (generated by CI)
+│   ├── index.html                  # Live job board (GitHub Pages)
+│   ├── jobs.md                     # Scraped jobs in markdown (generated by CI)
+│   └── README.md
 ├── .github/
-│   ├── CODEOWNERS
 │   └── workflows/
-│       ├── job-seeker-ro-spider.yml     # Daily scraping at 6 AM UTC
-│       └── automation-testing.yml       # Automation Tests on push/PR
+│       ├── job-seeker-ro-spider.yml       # Daily scraping at 6 AM UTC
+│       ├── automation-testing.yml         # Automation Tests on push/PR
+│       ├── job-deep-validate.yml          # Manual deep validation (Playwright)
+│       ├── automation-template-sync-check.yml  # Weekly template sync check
+│       └── job-recovery-from-disaster.yml # Manual stale-job recovery
 └── package.json
 ```
 
@@ -96,11 +105,9 @@ npm install
 
 ### Configuration
 
-Set the `SOLR_AUTH` environment variable with your Solr credentials:
+Nu sunt necesare variabile de mediu pentru scrape — toate operațiile trec prin [API-ul peviitor.ro](https://api.peviitor.ro/) (fără acces direct SOLR, fără `SOLR_AUTH`).
 
-```bash
-export SOLR_AUTH="username:password"
-```
+Testele de consistency au nevoie de `GITHUB_REPOSITORY` (format `owner/repo`) și `GITHUB_TOKEN` (rulează automat în GitHub Actions).
 
 ## Usage
 
@@ -126,9 +133,9 @@ npm run test:integration
 npm run test:e2e
 ```
 
-## Derived Scrapers
+## Related Scrapers
 
-Acest template a fost folosit cu succes pentru a deriva scraper-e pentru alte companii din ecosistemul peviitor.ro:
+Acest scraper este derivat din [template-ul de referință](https://github.com/sebiboga/epam-systems-international-srl-nodejs-scraper), template-ul de referință pentru toate scraper-ele Node.js din ecosistemul peviitor.ro. Alte scraper-e din același ecosistem:
 
 | Repo | Companie | CIF | Metodă | Status |
 |------|----------|-----|--------|--------|

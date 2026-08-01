@@ -9,8 +9,8 @@
  * SCOPE: Generic — works with ANY CIF, single URL, or list from file.
  * Used for ad-hoc cleanup and debugging. NOT called from CI.
  *
- * For the fast CI-friendly HEAD check, see
- * tests/validate-artsoft-consult-jobs.js.
+ * For the fast CI-friendly EPAM-only HEAD check, see
+ * tests/validate-epam-jobs.js.
  *
  * Usage:
  *   node validate-jobs.js <CIF>                   - Query Solr and validate all jobs for a CIF
@@ -20,7 +20,7 @@
  */
 
 import fs from "fs";
-import { validateByContent } from "./src/job-validator.js";
+import { validateByContent } from "./job-validator.js";
 
 async function checkUrls(urls) {
   console.log(`=== Validating ${urls.length} URLs ===\n`);
@@ -61,7 +61,7 @@ async function checkUrls(urls) {
 async function validateJobs(cif) {
   console.log("=== Validate Job URLs from Solr ===\n");
   
-  const { querySOLR } = await import("./solr.js");
+  const { querySOLR } = await import("./api.js");
   const result = await querySOLR(cif);
   const urls = result.docs.map(doc => doc.url);
   
@@ -90,7 +90,7 @@ async function loadUrlsFromFile(filePath) {
 }
 
 async function deleteExpiredJobs(expiredJobs) {
-  const { deleteJobByUrl } = await import("./solr.js");
+  const { deleteJobByUrl } = await import("./api.js");
   
   console.log(`\nDeleting ${expiredJobs.length} expired jobs from SOLR...`);
   
@@ -136,7 +136,7 @@ Usage:
 
 Examples:
   node validate-jobs.js 15997630                 - Validate ArtSoft Consult jobs
-  node validate-jobs.js --url "https://www.artsoft-consult.ro/careers/job-openings/some-job"
+  node validate-jobs.js --url "https://www.artsoft-consult.ro/careers/job-openings"
   node validate-jobs.js --urls "url1" "url2" "url3"
   node validate-jobs.js --file jobs.json
 `;

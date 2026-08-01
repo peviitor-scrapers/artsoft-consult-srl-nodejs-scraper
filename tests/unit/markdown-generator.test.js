@@ -1,9 +1,9 @@
-import { generateJobsMarkdown } from "../../src/markdown-generator.js";
+import { generateJobsMarkdown } from "../../scraper/markdown-generator.js";
 
 const baseCompany = {
   id: "15997630",
   company: "ARTSOFT CONSULT SRL",
-  brand: "ArtSoft Consult",
+  brand: "ARTSOFT CONSULT",
   status: "activ",
   location: ["Cluj-Napoca"],
   website: ["https://www.artsoft-consult.ro"],
@@ -34,7 +34,7 @@ describe("generateJobsMarkdown", () => {
 
     it("includes brand", () => {
       const md = generateJobsMarkdown(baseCompany, []);
-      expect(md).toContain("ArtSoft Consult");
+      expect(md).toContain("ARTSOFT CONSULT");
     });
 
     it("includes status", () => {
@@ -134,6 +134,38 @@ describe("generateJobsMarkdown", () => {
     it("includes a generated timestamp", () => {
       const md = generateJobsMarkdown(baseCompany, []);
       expect(md).toMatch(/_Generated: \d{4}-\d{2}-\d{2}/);
+    });
+  });
+
+  describe("markdown escaping", () => {
+    it("escapes # in job titles", () => {
+      const job = { ...baseJob, title: "C# Developer" };
+      const md = generateJobsMarkdown(baseCompany, [job]);
+      expect(md).toContain("### C\\# Developer");
+    });
+
+    it("escapes * in job titles", () => {
+      const job = { ...baseJob, title: "Full-Stack * Developer" };
+      const md = generateJobsMarkdown(baseCompany, [job]);
+      expect(md).toContain("### Full-Stack \\* Developer");
+    });
+
+    it("escapes [ ] in company name", () => {
+      const company = { ...baseCompany, company: "ACME [Tech] SRL" };
+      const md = generateJobsMarkdown(company, []);
+      expect(md).toContain("# ACME \\[Tech\\] SRL");
+    });
+
+    it("escapes ` in tags", () => {
+      const job = { ...baseJob, tags: ["node.js", "`bash`"] };
+      const md = generateJobsMarkdown(baseCompany, [job]);
+      expect(md).toContain("\\`bash\\`");
+    });
+
+    it("escapes # in location", () => {
+      const job = { ...baseJob, location: ["Building #5"] };
+      const md = generateJobsMarkdown(baseCompany, [job]);
+      expect(md).toContain("Building \\#5");
     });
   });
 });
