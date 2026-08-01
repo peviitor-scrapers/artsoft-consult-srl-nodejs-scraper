@@ -8,9 +8,9 @@
  *   JS-rendered 404 text (Workday SPAs, etc.).
  *
  * Used by:
- *   - tests/validate-epam-jobs.js (CI nightly cleanup) — uses validateByHead
- *   - validate-jobs.js (manual deep checks)            — uses validateByContent
- *   - .github/workflows/job-deep-validate.yml (manual)     — uses validateByBrowser
+ *   - tests/validate-artsoft-consult-jobs.js (CI nightly cleanup) — uses validateByHead
+ *   - validate-jobs.js (manual deep checks)                       — uses validateByContent
+ *   - .github/workflows/job-deep-validate.yml (manual)            — uses validateByBrowser
  */
 
 import fetch from "node-fetch";

@@ -2,13 +2,40 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
-
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
+| 1.x     | :white_check_mark: |
 
 ## Reporting a Vulnerability
 
-Please report security issues to the repository owner via email or GitHub Issues.
+If you discover a security vulnerability, please report it by:
+
+1. **Do NOT** create a public GitHub issue
+2. Email the maintainer directly
+3. Include a detailed description of the vulnerability
+4. Provide steps to reproduce
+
+We will respond within 48 hours and work with you to address the issue.
+
+## Security Best Practices
+
+When using this project:
+
+- Never commit `.env` files or credentials to the repository
+- Store secrets in GitHub Secrets for CI/CD
+- Rotate credentials regularly
+- Review Peviitor API access permissions
+
+## Dependencies
+
+This project uses `npm audit` to check for vulnerable dependencies. Run:
+
+```bash
+npm audit
+```
+
+Keep dependencies up to date with:
+
+```bash
+npm update
+```

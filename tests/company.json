@@ -29,7 +29,7 @@
     "career": ["https://www.artsoft-consult.ro/careers/job-openings"],
     "defaultLocation": "Cluj-Napoca",
     "headquarters": "Str. Eugen Ionesco, 1A, Cluj-Napoca, Cluj",
-    "scraperFile": "https://raw.githubusercontent.com/sebiboga/artsoft-consult-srl-nodejs-scraper/main/.github/workflows/job-seeker-ro-spider.yml"
+    "scraperFile": "https://github.com/sebiboga/artsoft-consult-srl-nodejs-scraper/actions/workflows/job-seeker-ro-spider.yml"
   },
   "peviitor": {
     "company": "ARTSOFT CONSULT SRL",

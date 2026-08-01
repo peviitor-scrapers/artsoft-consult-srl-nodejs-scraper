@@ -1,16 +1,52 @@
-# VERIFY.md — Pași de verificare înainte de push
+# Verification Steps
 
-1. Rulează testele unitare locale:
+After making changes to this repo, run through these steps in order.
+
+## 1. Rulează testele local
+
+```bash
+npm test
+npm run test:unit
+npm run test:integration
+npm run test:e2e
+npm run test:consistency
+```
+
+Toate testele trebuie să treacă (0 failed).
+
+## 2. Verifică fiecare GitHub Actions workflow
+
+Pentru fiecare workflow din `.github/workflows/`:
+
+| Workflow | Trigger | Ce verifici |
+|----------|---------|-------------|
+| `job-seeker-ro-spider.yml` | `workflow_dispatch` | Rulează scraperul → jobs in API + docs/jobs.md generat |
+| `automation-testing.yml` | `workflow_dispatch` | Toate testele + validare job-uri + company core |
+| `job-deep-validate.yml` | `workflow_dispatch` | Deep validation cu Playwright (browser mode) |
+| `automation-template-sync-check.yml` | schedule (luni) | Verifică că repo-ul e la zi cu template-ul |
+| `job-recovery-from-disaster.yml` | `workflow_dispatch` | Restaurează company core (dry-run default) |
+
+### Cum verifici:
+
+1. Mergi pe GitHub → Actions → selectează workflow-ul
+2. Apasă **Run workflow** (pe `main`)
+3. Așteaptă să se termine
+4. Verifică că toate job-urile sunt **green (PASS)**
+5. Dacă un job eșuează → oprește-te, repară, reîncepe de la pasul 1
+
+## 3. Rulează scraperul prin GitHub Actions (ultimul pas)
+
+1. Mergi la **Actions** → **Oportunitati SI Cariere** (`job-seeker-ro-spider.yml`)
+2. Apasă **Run workflow** → lasă `main`
+3. Așteaptă să se termine
+4. Verifică prin API că job-urile companiei apar:
    ```bash
-   npm run test:unit
+   curl -s "https://api.peviitor.ro/v1/scraper/jobs/?cif=15997630&rows=10" | jq
    ```
-   Toate testele trebuie să treacă.
-
-2. Verifică GitHub Actions:
-   - `job-seeker-ro-spider.yml` trebuie să ruleze cu succes
-   - `automation-testing.yml` trebuie să ruleze cu succes
-
-3. Verifică job-urile în SOLR după un scrape reușit.
-
-4. Verifică `docs/jobs.md` a fost generat și este accesibil pe GitHub Pages:
+5. Verifică că `docs/jobs.md` a fost generat și este accesibil:
    - https://sebiboga.github.io/artsoft-consult-srl-nodejs-scraper/jobs.md
+6. Verifică pe https://peviitor.ro că job-urile sunt vizibile
+
+## 4. Final
+
+Dacă toți pașii de mai sus sunt verzi, modificarea e gata de merge.

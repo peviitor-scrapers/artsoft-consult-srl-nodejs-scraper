@@ -9,8 +9,8 @@
  * SCOPE: Generic — works with ANY CIF, single URL, or list from file.
  * Used for ad-hoc cleanup and debugging. NOT called from CI.
  *
- * For the fast CI-friendly EPAM-only HEAD check, see
- * tests/validate-epam-jobs.js.
+ * For the fast CI-friendly single-CIF HEAD check, see
+ * tests/validate-artsoft-consult-jobs.js.
  *
  * Usage:
  *   node validate-jobs.js <CIF>                   - Query Solr and validate all jobs for a CIF
