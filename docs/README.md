@@ -2,7 +2,9 @@
 
 **job_seeker_ro_spider** — scraper pentru job-urile ArtSoft Consult din România.
 
-Extrage anunțurile de pe [ArtSoft Consult careers](https://www.artsoft-consult.ro/careers/job-openings) și le publică în [peviitor.ro](https://peviitor.ro) prin [API-ul peviitor.ro](https://api.peviitor.ro/).
+Extrage anunțurile de pe [ArtSoft Consult careers](https://www.artsoft-consult.ro/careers/job-openings) și le publică în [peviitor.ro](https://peviitor.ro) prin API-ul Peviitor.
+
+> **🌱 Derived scraper.** Acest repo este **derivat** din [template-ul de referință](https://github.com/sebiboga/epam-systems-international-srl-nodejs-scraper) — implementarea de referință pentru toate scraper-ele Node.js din ecosistemul peviitor.ro. Consultă [CONTRIBUTING.md](../CONTRIBUTING.md) pentru detalii despre derivare.
 
 ## Identificare
 
@@ -21,35 +23,8 @@ job_seeker_ro_spider
 2. **Cross-validează cu Peviitor** — verifică existența companiei în API-ul Peviitor
 3. **Scrape-uiește job-urile** — extrage lista completă de job-uri din pagina de cariere ArtSoft Consult (HTML scraping cu cheerio)
 4. **Transformă datele** — normalizează locațiile (doar orașe românești), tag-urile (lowercase), workmode-ul (remote/on-site/hybrid)
-5. **Stochează** — upsert prin API-ul peviitor.ro în `job` core (job-urile) și `company` core (datele companiei)
-6. **Generează docs/jobs.md** — fișier markdown cu informații companie + toate job-urile curente
-
-## Structură proiect
-
-```
-├── scraper/config/company.json  # Sursa unică de adevăr (id, company, brand, URL-uri)
-├── scraper/config/scraper.json  # Config scraper (apiBase, careerUrl, defaultLocation)
-├── scraper/index.js             # Orchestrator principal (HTML scraping cu cheerio)
-├── scraper/company.js           # Validare companie (ANAF + CUIScan + Peviitor) cu cache 7 zile
-├── scraper/api.js               # Operații peviitor API (query, upsert, delete, company)
-├── scraper/anaf.js              # Modul ANAF API (search + details + fallback)
-├── scraper/demoanaf.js          # CLI wrapper pentru scraper/anaf.js
-├── scraper/markdown-generator.js# Generează docs/jobs.md după scrape
-├── scraper/job-validator.js     # Primitivă comună: validateByHead/Content/Browser
-├── scraper/validate-jobs.js     # Validator manual deep (content-aware)
-├── ai/                          # Documentație pentru AI agents (AGENTS.md, files.md, ș.a.)
-├── tests/
-│   ├── unit/                    # Teste unitare (API-uri mock-uite)
-│   ├── integration/             # Teste de integrare (ANAF + peviitor API live)
-│   ├── e2e/                     # Teste end-to-end (pipelin complet)
-│   └── consistency/             # Teste structură repo (fișiere, topics, version)
-└── .github/workflows/
-    ├── job-seeker-ro-spider.yml         # Rulează zilnic la 6 AM UTC
-    ├── automation-testing.yml           # Teste automate la fiecare push/PR
-    ├── job-deep-validate.yml            # Deep validation manual (Playwright)
-    ├── automation-template-sync-check.yml # Check săptămânal sincronizare template
-    └── job-recovery-from-disaster.yml   # Recuperare manuală job-uri stale
-```
+5. **Stochează în Peviitor** — upsert prin API-ul Peviitor (job-uri și date companie)
+6. **Generează jobs.md** — fișier markdown cu informații companie + toate job-urile curente
 
 ## API-uri folosite
 
@@ -60,7 +35,15 @@ job_seeker_ro_spider
 | CUIFirma / CUIScan | `https://www.cuifirma.ro`, `https://www.cuiscan.ro` | Public (fallback) |
 | Peviitor | `https://api.peviitor.ro/v1/` | Public |
 
-Accesul la SOLR se face exclusiv prin API-ul peviitor.ro — nu e necesar `SOLR_AUTH`.
+## Robots.txt
+
+ArtSoft Consult [robots.txt](https://www.artsoft-consult.ro/robots.txt) permite scraping-ul paginii de cariere. Scraper-ul:
+- Fetches `https://www.artsoft-consult.ro/careers/job-openings` (pagină HTML publică)
+- Respectă bunele practici standard de crawling
+- Folosește un singur User-Agent identificabil: `job_seeker_ro_spider`
+- Face un număr minim de request-uri (o singură fetch per rulare)
+
+Pentru analiza completă, vezi [ai/ROBOTS.md](../ai/ROBOTS.md).
 
 ## Testare
 
@@ -71,12 +54,11 @@ npm test
 # Doar unitare
 npm run test:unit
 
-# Doar integrare (necesită ANAF live)
+# Doar integrare (necesită ANAF live, Peviitor API conditional)
 npm run test:integration
 
-# Doar E2E (site-ul real ArtSoft + ANAF + peviitor API)
+# Doar E2E (site-ul real ArtSoft + ANAF + Peviitor)
 npm run test:e2e
-
-# Doar consistency (necesită GITHUB_REPOSITORY + GITHUB_TOKEN)
-npm run test:consistency
 ```
+
+Testele Peviitor API folosesc `itIfApi` — se auto-skip dacă API-ul Peviitor nu e disponibil.
