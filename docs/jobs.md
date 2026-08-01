@@ -7,14 +7,21 @@
 | CIF | 15997630 |
 | Brand | ARTSOFT CONSULT |
 | Status | activ |
-| Location | EUGEN IONESCO, 1A, Municipiul Cluj-Napoca, Cluj |
+| Location | Cluj-Napoca |
 | Website | [https://www.artsoft-consult.ro](https://www.artsoft-consult.ro) |
 | Careers | [https://www.artsoft-consult.ro/careers/job-openings](https://www.artsoft-consult.ro/careers/job-openings) |
-| Last Scraped | 2026-06-29 |
+| Last Scraped | 2026-08-01 |
 
-## Current Job Listings (1)
+## Current Job Listings (2)
 
-_Generated: 2026-06-29T11:12:58.202Z_
+_Generated: 2026-08-01T06:48:45.536Z_
+
+### Mid-level QA engineer - manual and automation with Python
+
+- **URL:** [https://www.artsoft-consult.ro/careers/job-openings/qa-engineer-manual-and-automation-with-python](https://www.artsoft-consult.ro/careers/job-openings/qa-engineer-manual-and-automation-with-python)
+- **Work Mode:** on-site
+- **Location:** Cluj-Napoca
+- **Status:** scraped
 
 ### Internship
 
