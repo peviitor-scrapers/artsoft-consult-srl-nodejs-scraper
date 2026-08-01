@@ -1,58 +1,9 @@
-import { jest } from '@jest/globals';
-import fetch from 'node-fetch';
-
-const API_BASE = 'https://api.peviitor.ro/v1';
-const ARTSOFT_CIF = '15997630';
-
-let HAS_API = false;
-
-async function checkApiAvailability() {
-  try {
-    const res = await fetch(`${API_BASE}/scraper/jobs/?cif=${ARTSOFT_CIF}&rows=1`, {
-      signal: AbortSignal.timeout(5000)
-    });
-    return res.ok || res.status === 400;
-  } catch {
-    return false;
-  }
-}
-
-let HAS_ANAF = false;
-
-async function checkAnafAvailability() {
-  try {
-    const res = await fetch('https://demoanaf.ro/api/search?q=test', {
-      method: 'HEAD',
-      signal: AbortSignal.timeout(5000)
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-function itIfApi(name, fn, timeout) {
-  if (HAS_API) {
-    return it(name, fn, timeout);
-  }
-  return it.skip(`${name} (skipped: API unavailable)`, fn, timeout);
-}
-
-function itIfAnaf(name, fn, timeout) {
-  if (HAS_ANAF) {
-    return it(name, fn, timeout);
-  }
-  return it.skip(`${name} (skipped: ANAF API unavailable)`, fn, timeout);
-}
+import { itIfApi, itIfAnaf } from '../helpers/availability.js';
 
 import companyConfig from '../../scraper/config/company.js';
 const COMPANY_CIF = companyConfig.id;
 const COMPANY_BRAND = companyConfig.brand;
 const COMPANY_NAME = companyConfig.company;
-
-beforeAll(async () => {
-  [HAS_API, HAS_ANAF] = await Promise.all([checkApiAvailability(), checkAnafAvailability()]);
-});
 
 describe('Integration: API Workflow', () => {
 

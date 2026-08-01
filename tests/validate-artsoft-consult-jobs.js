@@ -21,10 +21,9 @@ const COMPANY = companyConfig.company;
 
 function getTimeout() {
   const idx = process.argv.indexOf("--timeout");
-  if (idx !== -1 && idx + 1 < process.argv.length) {
-    return parseInt(process.argv[idx + 1], 10);
-  }
-  return undefined;
+  if (idx === -1 || idx + 1 >= process.argv.length) return undefined;
+  const value = parseInt(process.argv[idx + 1], 10);
+  return Number.isNaN(value) ? undefined : value;
 }
 
 function getValidator() {

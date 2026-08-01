@@ -280,7 +280,7 @@ export async function runVerification(cif) {
 // STANDALONE MODE
 // ============================================================================
 
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("api.js")) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
 
   if (args[0]) {

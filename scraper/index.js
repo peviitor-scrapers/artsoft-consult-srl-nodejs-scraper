@@ -19,14 +19,44 @@ const TIMEOUT = 10000;
 
 let COMPANY_NAME = null;
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// Single source of truth for Romanian city detection + SOLR location whitelist.
+// Lowercase matching uses word boundaries so e.g. "Roman" does not match "România".
+const ROMANIAN_CITIES = [
+  'Bucharest', 'București', 'Cluj-Napoca', 'Cluj Napoca',
+  'Timișoara', 'Timisoara', 'Iași', 'Iasi', 'Brașov', 'Brasov',
+  'Constanța', 'Constanta', 'Craiova', 'Bacău', 'Sibiu',
+  'Târgu Mureș', 'Targu Mures', 'Oradea', 'Baia Mare', 'Satu Mare',
+  'Ploiești', 'Ploiesti', 'Pitești', 'Pitesti', 'Arad', 'Galați', 'Galati',
+  'Brăila', 'Braila', 'Drobeta-Turnu Severin', 'Râmnicu Vâlcea', 'Ramnicu Valcea',
+  'Buzău', 'Buzau', 'Botoșani', 'Botosani', 'Zalău', 'Zalau', 'Hunedoara', 'Deva',
+  'Suceava', 'Bistrița', 'Bistrita', 'Tulcea', 'Călărași', 'Calarasi',
+  'Giurgiu', 'Alba Iulia', 'Slatina', 'Piatra Neamț', 'Piatra Neamt', 'Roman',
+  'Dumbrăvița', 'Dumbravita', 'Voluntari', 'Popești-Leordeni', 'Popesti-Leordeni',
+  'Chitila', 'Mogoșoaia', 'Mogosoaia', 'Otopeni'
+];
+
+const CITY_PATTERNS = ROMANIAN_CITIES.map((city) => ({
+  city,
+  re: new RegExp(`(^|[^a-zăâîșț])${city.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^a-zăâîșț])`)
+}));
+
+const CITY_SET = new Set(ROMANIAN_CITIES.map((c) => c.toLowerCase()));
+
+function findMatchingCities(descText) {
+  const found = [];
+  for (const { city, re } of CITY_PATTERNS) {
+    if (re.test(descText) && !found.includes(city)) found.push(city);
+  }
+  return found;
+}
 
 async function fetchJobsHtml() {
   const res = await fetch(CAREER_URL, {
     headers: {
       "User-Agent": "job_seeker_ro_spider",
       "Accept": "text/html"
-    }
+    },
+    signal: AbortSignal.timeout(TIMEOUT)
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${CAREER_URL}`);
   return res.text();
@@ -57,21 +87,7 @@ function parseHtmlJobs(html) {
       workmode = "hybrid";
     }
 
-    const romanianCities = [
-      'bucharest', 'bucurești', 'cluj-napoca', 'cluj', 'timișoara', 'timisoara',
-      'iași', 'iasi', 'brașov', 'brasov', 'constanța', 'constanta', 'craiova',
-      'bacău', 'sibiu', 'târgu mureș', 'targu mures', 'oradea', 'baia mare',
-      'satu mare', 'ploiești', 'ploiesti', 'pitești', 'pitesti', 'arad',
-      'galați', 'galati', 'brăila', 'braila', 'suceava', 'bistrița', 'bistrita'
-    ];
-
-    for (const city of romanianCities) {
-      if (descText.includes(city)) {
-        const properName = city.split('-').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('-');
-        location.push(properName);
-        break;
-      }
-    }
+    location = findMatchingCities(descText);
 
     if (location.length === 0) location.push(DEFAULT_LOCATION);
 
@@ -81,7 +97,7 @@ function parseHtmlJobs(html) {
   return { jobs, total: jobs.length };
 }
 
-async function scrapeAllListings(_testOnlyOnePage = false) {
+async function scrapeAllListings() {
   console.log(`Fetching ${CAREER_URL}`);
   const html = await fetchJobsHtml();
   const { jobs, total } = parseHtmlJobs(html);
@@ -166,28 +182,13 @@ function mapToJobModel(rawJob, cif, companyName = COMPANY_NAME) {
 }
 
 function transformJobsForSOLR(payload) {
-  const romanianCities = [
-    'Bucharest', 'București', 'Cluj-Napoca', 'Cluj Napoca',
-    'Timișoara', 'Timisoara', 'Iași', 'Iasi', 'Brașov', 'Brasov',
-    'Constanța', 'Constanta', 'Craiova', 'Bacău', 'Sibiu',
-    'Târgu Mureș', 'Targu Mures', 'Oradea', 'Baia Mare', 'Satu Mare',
-    'Ploiești', 'Ploiesti', 'Pitești', 'Pitesti', 'Arad', 'Galați', 'Galati',
-    'Brăila', 'Braila', 'Drobeta-Turnu Severin', 'Râmnicu Vâlcea', 'Ramnicu Valcea',
-    'Buzău', 'Buzau', 'Botoșani', 'Botosani', 'Zalău', 'Zalau', 'Hunedoara', 'Deva',
-    'Suceava', 'Bistrița', 'Bistrita', 'Tulcea', 'Călărași', 'Calarasi',
-    'Giurgiu', 'Alba Iulia', 'Slatina', 'Piatra Neamț', 'Piatra Neamt', 'Roman',
-    'Dumbrăvița', 'Dumbravita', 'Voluntari', 'Popești-Leordeni', 'Popesti-Leordeni',
-    'Chitila', 'Mogoșoaia', 'Mogosoaia', 'Otopeni'
-  ];
-
-  const citySet = new Set(romanianCities.map(c => c.toLowerCase()));
-
   const normalizeWorkmode = (wm) => {
     if (!wm) return undefined;
     const lower = wm.toLowerCase();
     if (lower.includes('remote')) return 'remote';
+    if (lower.includes('hybrid')) return 'hybrid';
     if (lower.includes('office') || lower.includes('on-site') || lower.includes('site')) return 'on-site';
-    return 'hybrid';
+    return 'on-site';
   };
 
   const transformed = {
@@ -197,7 +198,7 @@ function transformJobsForSOLR(payload) {
       const validLocations = (job.location || []).filter(loc => {
         const lower = loc.toLowerCase().trim();
         if (lower === 'romania' || lower === 'românia') return true;
-        return citySet.has(lower);
+        return CITY_SET.has(lower);
       }).map(loc => loc.toLowerCase() === 'romania' ? 'România' : loc);
 
       return {
@@ -216,8 +217,6 @@ function transformJobsForSOLR(payload) {
 // ============================================================================
 
 async function main() {
-  const testOnlyOnePage = process.argv.includes("--test");
-
   try {
     fs.mkdirSync("scraper", { recursive: true });
 
@@ -250,7 +249,7 @@ async function main() {
       console.log(`Note: Could not upsert company: ${err.message}`);
     }
 
-    const rawJobs = await scrapeAllListings(testOnlyOnePage);
+    const rawJobs = await scrapeAllListings();
     const internshipJobs = await scrapeInternship();
     const allJobs = [...rawJobs, ...internshipJobs];
     const scrapedCount = allJobs.length;

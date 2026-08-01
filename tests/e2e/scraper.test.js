@@ -1,59 +1,11 @@
-import { jest } from '@jest/globals';
 import fetch from 'node-fetch';
-
-const API_BASE = 'https://api.peviitor.ro/v1';
-const ARTSOFT_CIF = '15997630';
-
-let HAS_API = false;
-
-async function checkApiAvailability() {
-  try {
-    const res = await fetch(`${API_BASE}/scraper/jobs/?cif=${ARTSOFT_CIF}&rows=1`, {
-      signal: AbortSignal.timeout(5000)
-    });
-    return res.ok || res.status === 400;
-  } catch {
-    return false;
-  }
-}
-
-let HAS_ANAF = false;
-
-async function checkAnafAvailability() {
-  try {
-    const res = await fetch('https://demoanaf.ro/api/search?q=test', {
-      method: 'HEAD',
-      signal: AbortSignal.timeout(5000)
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-function itIfApi(name, fn, timeout) {
-  if (HAS_API) {
-    return it(name, fn, timeout);
-  }
-  return it.skip(`${name} (skipped: API unavailable)`, fn, timeout);
-}
-
-function itIfAnaf(name, fn, timeout) {
-  if (HAS_ANAF) {
-    return it(name, fn, timeout);
-  }
-  return it.skip(`${name} (skipped: ANAF API unavailable)`, fn, timeout);
-}
+import { itIfApi, itIfAnaf } from '../helpers/availability.js';
 
 import companyConfig from '../../scraper/config/company.js';
 const TEST_CIF = companyConfig.id;
 const TEST_BRAND = companyConfig.brand;
 const COMPANY_NAME = companyConfig.company;
 const CAREER_URL = 'https://www.artsoft-consult.ro/careers/job-openings';
-
-beforeAll(async () => {
-  [HAS_API, HAS_ANAF] = await Promise.all([checkApiAvailability(), checkAnafAvailability()]);
-});
 
 describe('E2E: Full Scraping Pipeline', () => {
 
@@ -65,10 +17,11 @@ describe('E2E: Full Scraping Pipeline', () => {
         headers: {
           'User-Agent': 'job_seeker_ro_spider',
           'Accept': 'text/html'
-        }
+        },
+        signal: AbortSignal.timeout(15000)
       });
       html = await res.text();
-    }, 15000);
+    }, 20000);
 
     it('should respond with valid job data from ArtSoft website', () => {
       expect(html.length).toBeGreaterThan(0);
@@ -86,10 +39,11 @@ describe('E2E: Full Scraping Pipeline', () => {
         headers: {
           'User-Agent': 'job_seeker_ro_spider',
           'Accept': 'text/html'
-        }
+        },
+        signal: AbortSignal.timeout(15000)
       });
       html = await res.text();
-    }, 15000);
+    }, 20000);
 
     it('should parse real ArtSoft HTML into standardized format', () => {
       const result = index.parseHtmlJobs(html);
@@ -152,7 +106,8 @@ describe('E2E: Full Scraping Pipeline', () => {
       for (const job of parsed.jobs.slice(0, 2)) {
         const res = await fetch(job.url, {
           method: 'HEAD',
-          headers: { 'User-Agent': 'job_seeker_ro_spider' }
+          headers: { 'User-Agent': 'job_seeker_ro_spider' },
+          signal: AbortSignal.timeout(10000)
         });
         expect(res.ok).toBe(true);
       }

@@ -33,12 +33,13 @@ const DEFAULT_TIMEOUT_MS = 15000;
  * HEAD-only validator. Returns the URL active if status is 2xx/3xx, expired
  * otherwise. Fast — used by CI nightly cleanup.
  */
-export async function validateByHead(url, { userAgent = DEFAULT_USER_AGENT } = {}) {
+export async function validateByHead(url, { userAgent = DEFAULT_USER_AGENT, timeout = DEFAULT_TIMEOUT_MS } = {}) {
   try {
     const res = await fetch(url, {
       method: "HEAD",
       headers: { "User-Agent": userAgent },
-      redirect: "follow"
+      redirect: "follow",
+      signal: AbortSignal.timeout(timeout)
     });
     return {
       url,
@@ -103,7 +104,7 @@ export async function validateByContent(url, {
 } = {}) {
   try {
     const res = await fetch(url, {
-      timeout,
+      signal: AbortSignal.timeout(timeout),
       headers: {
         "User-Agent": userAgent,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,application/json,*/*;q=0.8",

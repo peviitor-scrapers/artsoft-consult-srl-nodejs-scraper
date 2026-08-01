@@ -8,7 +8,6 @@ jest.unstable_mockModule('node-fetch', () => ({
 }));
 
 const COMPANY_JSON_PATH = 'tmp/company.json';
-const ROOT_COMPANY_JSON_PATH = 'company.json';
 
 function backupFile(path) {
   if (fs.existsSync(path)) {
@@ -23,9 +22,7 @@ function restoreFile(path) {
 }
 
 function clearAllCaches() {
-  for (const p of [COMPANY_JSON_PATH, ROOT_COMPANY_JSON_PATH]) {
-    if (fs.existsSync(p)) fs.unlinkSync(p);
-  }
+  if (fs.existsSync(COMPANY_JSON_PATH)) fs.unlinkSync(COMPANY_JSON_PATH);
 }
 
 function anafCompanyResponse(data) {
@@ -66,13 +63,11 @@ describe('company.js', () => {
   beforeAll(async () => {
     fs.mkdirSync("tmp", { recursive: true });
     backupFile(COMPANY_JSON_PATH);
-    backupFile(ROOT_COMPANY_JSON_PATH);
     company = await import('../../scraper/company.js');
   });
 
   afterAll(() => {
     restoreFile(COMPANY_JSON_PATH);
-    restoreFile(ROOT_COMPANY_JSON_PATH);
   });
 
   beforeEach(() => {
@@ -154,19 +149,23 @@ describe('company.js', () => {
       expect(typeof result.existingJobsCount).toBe('number');
     });
 
-    // ArtSoft e activă — testul inactive se rulează doar dacă firma e inactivă
-    if (ARTSOFT_ANAF_RECORD.inactive) {
-      it('should return inactive status when company is inactive', async () => {
-        const inactiveRecord = { ...ARTSOFT_ANAF_RECORD, inactive: true };
+    it('should return inactive status when company is inactive', async () => {
+      const inactiveRecord = { ...ARTSOFT_ANAF_RECORD, inactive: true };
 
-        mockFetch
-          .mockResolvedValueOnce(anafCompanyResponse(inactiveRecord))
-          .mockResolvedValueOnce(solrResponse(0, []));
+      mockFetch
+        .mockResolvedValueOnce(anafCompanyResponse(inactiveRecord))
+        .mockResolvedValueOnce(solrResponse(2, [
+          { url: 'https://test.com/1', title: 'Job 1' },
+          { url: 'https://test.com/2', title: 'Job 2' }
+        ]))
+        .mockResolvedValueOnce(peviitorResponse([]))
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ count: 2 }) });
 
-        const result = await company.validateAndGetCompany();
+      const result = await company.validateAndGetCompany();
 
-        expect(result).toHaveProperty('status', 'inactive');
-      });
-    }
+      expect(result).toHaveProperty('status', 'inactive');
+      expect(result).toHaveProperty('company', 'ARTSOFT CONSULT SRL');
+      expect(result).toHaveProperty('existingJobsCount', 2);
+    });
   });
 });
