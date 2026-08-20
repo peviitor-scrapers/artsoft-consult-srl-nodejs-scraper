@@ -10,11 +10,11 @@
 | Location | JUD. CLUJ, MUN. CLUJ-NAPOCA, STR. EUGEN IONESCO, NR.1A |
 | Website | [https://www.artsoft-consult.ro](https://www.artsoft-consult.ro) |
 | Careers | [https://www.artsoft-consult.ro/careers/job-openings](https://www.artsoft-consult.ro/careers/job-openings) |
-| Last Scraped | 2026-08-19 |
+| Last Scraped | 2026-08-20 |
 
 ## Current Job Listings (2)
 
-_Generated: 2026-08-19T06:53:28.316Z_
+_Generated: 2026-08-20T06:55:03.084Z_
 
 ### Mid-level QA engineer - manual and automation with Python
 
