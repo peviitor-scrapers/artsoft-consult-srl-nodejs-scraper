@@ -7,14 +7,14 @@
 | CIF | 15997630 |
 | Brand | ARTSOFT CONSULT |
 | Status | activ |
-| Location | JUD. CLUJ, MUN. CLUJ-NAPOCA, STR. EUGEN IONESCO, NR.1A |
+| Location | Cluj-Napoca |
 | Website | [https://www.artsoft-consult.ro](https://www.artsoft-consult.ro) |
 | Careers | [https://www.artsoft-consult.ro/careers/job-openings](https://www.artsoft-consult.ro/careers/job-openings) |
-| Last Scraped | 2026-09-14 |
+| Last Scraped | 2026-09-15 |
 
 ## Current Job Listings (1)
 
-_Generated: 2026-09-14T12:24:13.831Z_
+_Generated: 2026-09-15T11:29:30.372Z_
 
 ### Internship
 
