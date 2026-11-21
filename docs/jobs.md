@@ -10,11 +10,11 @@
 | Location | JUD. CLUJ, MUN. CLUJ-NAPOCA, STR. EUGEN IONESCO, NR.1A |
 | Website | [https://www.artsoft-consult.ro](https://www.artsoft-consult.ro) |
 | Careers | [https://www.artsoft-consult.ro/careers/job-openings](https://www.artsoft-consult.ro/careers/job-openings) |
-| Last Scraped | 2026-11-20 |
+| Last Scraped | 2026-11-21 |
 
 ## Current Job Listings (1)
 
-_Generated: 2026-11-20T15:11:51.630Z_
+_Generated: 2026-11-21T14:28:13.725Z_
 
 ### Internship
 
